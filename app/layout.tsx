@@ -1,16 +1,17 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
+import { Pacifico, Quicksand } from 'next/font/google'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
+const quicksand = Quicksand({ subsets: ['latin'], variable: '--font-quicksand' })
+const pacifico = Pacifico({ subsets: ['latin'], weight: '400', variable: '--font-pacifico' })
 
 export const metadata: Metadata = {
-  title: 'Tasks — Simple To-Do List',
-  description: 'A fast, offline-friendly to-do list. Add, check off, and clear tasks.',
-  applicationName: 'Tasks',
-  appleWebApp: { capable: true, title: 'Tasks', statusBarStyle: 'black-translucent' },
+  title: 'Happy Birthday Aleena! 💖',
+  description: 'A tiny digital world dedicated only to you, my favorite human!',
+  applicationName: 'For Aleena',
+  appleWebApp: { capable: true, title: 'For Aleena', statusBarStyle: 'default' },
   icons: {
     icon: [
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -21,14 +22,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
+  colorScheme: 'light',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafaf9' },
-    { media: '(prefers-color-scheme: dark)', color: '#18181b' },
-  ],
+  themeColor: '#f9a8d4',
 }
 
 export default function RootLayout({
@@ -37,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} bg-background`}>
-      <body className="font-sans antialiased">
+    <html lang="en" className={`${quicksand.variable} ${pacifico.variable} light bg-background`}>
+      <body className="overflow-x-hidden font-sans antialiased">
         {children}
         <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
