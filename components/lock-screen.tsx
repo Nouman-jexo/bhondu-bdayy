@@ -72,34 +72,34 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   return (
     <main
       className={cn(
-        'flex min-h-dvh flex-col items-center justify-center gap-6 px-5 py-10 transition-all duration-700',
+        'mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-[clamp(0.5rem,2.2dvh,1.5rem)] overflow-x-hidden px-4 py-[clamp(0.75rem,3dvh,2.5rem)] transition-all duration-700',
         unlocked && 'scale-105 opacity-0',
       )}
     >
-      <div ref={lockRef} className="relative flex items-center justify-center">
-        <div className="absolute size-36 animate-pulse rounded-full bg-primary/30 blur-2xl" />
-        <div className="heart-beat relative flex size-28 items-center justify-center">
-          <Heart className="absolute size-28 fill-primary text-primary drop-shadow-[0_0_20px_var(--primary)]" />
+      <div ref={lockRef} className="relative flex shrink-0 items-center justify-center">
+        <div className="absolute size-[clamp(4rem,14dvh,9rem)] animate-pulse rounded-full bg-primary/30 blur-2xl" />
+        <div className="heart-beat relative flex size-[clamp(3.5rem,12dvh,7rem)] items-center justify-center">
+          <Heart className="absolute size-full fill-primary text-primary drop-shadow-[0_0_20px_var(--primary)]" />
           {unlocked ? (
-            <LockKeyholeOpen className="relative mt-1 size-9 text-primary-foreground" />
+            <LockKeyholeOpen className="relative mt-1 size-[35%] text-primary-foreground" />
           ) : (
-            <LockKeyhole className="relative mt-1 size-9 text-primary-foreground" />
+            <LockKeyhole className="relative mt-1 size-[35%] text-primary-foreground" />
           )}
         </div>
       </div>
 
-      <div className="text-center">
-        <p className="text-sm font-bold uppercase tracking-widest text-primary">Suno Jaan!</p>
-        <h1 className="mt-1 text-balance font-display text-3xl text-foreground">
+      <div className="w-full text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-primary sm:text-sm">Suno Jaan!</p>
+        <h1 className="mt-1 text-balance font-display text-[clamp(1.25rem,6.5vw,1.875rem)] leading-snug text-foreground">
           Unlock my heart with the special date! ❤️
         </h1>
-        <p className="mt-2 text-pretty text-sm text-muted-foreground">
+        <p className="mt-1.5 text-pretty text-xs text-muted-foreground sm:text-sm">
           {'Woh din yaad hai? Date daalo (DDMMYYYY) aur andar aajao...'}
         </p>
       </div>
 
       <div
-        className={cn('flex gap-1.5 sm:gap-2', shaking && 'shake')}
+        className={cn('flex w-full max-w-xs justify-center gap-1 sm:gap-2', shaking && 'shake')}
         role="img"
         aria-label={`${pin.length} of ${SECRET_PIN.length} digits entered`}
       >
@@ -109,12 +109,12 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             <span
               key={i}
               className={cn(
-                'flex size-9 items-center justify-center rounded-xl border-2 text-lg transition-all duration-200 sm:size-10',
+                'flex aspect-square min-w-0 max-w-10 flex-1 items-center justify-center rounded-lg border-2 text-base transition-all duration-200 sm:rounded-xl sm:text-lg',
                 filled
                   ? 'scale-105 border-primary bg-primary/15 text-primary shadow-[0_0_14px_var(--primary)]'
                   : 'border-primary/30 bg-card/50',
                 i === pin.length && !unlocked && 'border-primary/70',
-                (i === 1 || i === 3) && 'mr-1.5 sm:mr-2',
+                (i === 1 || i === 3) && 'mr-1 sm:mr-2',
               )}
             >
               {filled ? '♥' : ''}
@@ -123,11 +123,14 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
         })}
       </div>
 
-      <p aria-live="assertive" className="min-h-10 max-w-xs text-pretty text-center text-sm font-semibold text-destructive">
+      <p
+        aria-live="assertive"
+        className="min-h-8 w-full max-w-xs text-pretty text-center text-xs font-semibold leading-snug text-destructive sm:min-h-10 sm:text-sm"
+      >
         {error}
       </p>
 
-      <div className="glass grid w-full max-w-72 grid-cols-3 gap-3 rounded-3xl p-4">
+      <div className="glass grid w-full max-w-72 shrink-0 grid-cols-3 gap-2 rounded-3xl p-3 sm:gap-3 sm:p-4">
         {KEYS.map((key) => (
           <button
             key={key}
@@ -135,7 +138,7 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             onClick={() => press(key)}
             aria-label={key === 'back' ? 'Delete digit' : key === 'clear' ? 'Clear all' : `Digit ${key}`}
             className={cn(
-              'flex h-14 items-center justify-center rounded-2xl text-xl font-bold transition-all active:scale-90 focus-visible:outline-2 focus-visible:outline-primary',
+              'flex h-[clamp(2.5rem,7.5dvh,3.5rem)] items-center justify-center rounded-2xl text-lg sm:text-xl font-bold transition-all active:scale-90 focus-visible:outline-2 focus-visible:outline-primary',
               key === 'clear' || key === 'back'
                 ? 'text-sm text-muted-foreground hover:bg-primary/10'
                 : 'bg-card/70 text-foreground shadow-sm hover:bg-primary hover:text-primary-foreground',

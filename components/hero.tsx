@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 
 function Letter({ char, index }: { char: string; index: number }) {
   const [bouncing, setBouncing] = useState(false)
-  if (char === ' ') return <span className="inline-block w-3" />
   return (
     <span
       onPointerEnter={() => setBouncing(true)}
@@ -44,18 +43,22 @@ export function Hero() {
     <section
       onPointerMove={handleMove}
       aria-labelledby="hero-title"
-      className="flex touch-pan-y flex-col items-center gap-4 px-2 pb-6 pt-14 text-center"
+      className="flex touch-pan-y flex-col items-center gap-4 overflow-hidden pb-6 pt-10 text-center sm:pt-14"
     >
       <p className="rounded-full border border-primary/30 bg-card/60 px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary backdrop-blur">
         15 . 10 . Aaj apka din hai
       </p>
-      <h1 id="hero-title" className="font-display text-5xl leading-tight sm:text-7xl">
+      <h1
+        id="hero-title"
+        className="w-full max-w-full font-display text-[clamp(2.25rem,13vw,4.5rem)] leading-tight"
+      >
         <span className="sr-only">Happy Birthday Aleena!</span>
-        <span aria-hidden="true" className="flex flex-col items-center gap-1">
-          <Word text="Happy Birthday" start={0} />
-          <span className="flex items-center gap-2">
+        <span aria-hidden="true" className="flex flex-wrap items-center justify-center gap-x-[0.3em] gap-y-1">
+          <Word text="Happy" start={0} />
+          <Word text="Birthday" start={6} />
+          <span className="flex items-center gap-[0.2em]">
             <Word text="Aleena!" start={14} />
-            <span className="wiggle inline-block">🎉💖</span>
+            <span className="wiggle inline-block text-[0.7em]">🎉💖</span>
           </span>
         </span>
       </h1>
