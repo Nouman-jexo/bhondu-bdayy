@@ -7,8 +7,10 @@ import { FloatingHearts } from '@/components/floating-hearts'
 import { Hero } from '@/components/hero'
 import { InstallPrompt } from '@/components/install-prompt'
 import { LockScreen } from '@/components/lock-screen'
+import { LoveDeclaration } from '@/components/love-declaration'
 import { LoveLetter } from '@/components/love-letter'
 import { LoveToast } from '@/components/love-toast'
+import { MusicPlayer } from '@/components/music-player'
 import { PandaAssistant } from '@/components/panda-assistant'
 import { ReasonsSection } from '@/components/reasons-section'
 
@@ -19,7 +21,7 @@ export function BirthdayApp() {
   const handleUnlock = useCallback(() => {
     setUnlocked(true)
     setToast('Access Granted! Welcome my Princess 🎉')
-    setTimeout(() => setToast(null), 3200)
+    setTimeout(() => setToast(null), 2200)
     window.scrollTo({ top: 0 })
   }, [])
 
@@ -27,6 +29,7 @@ export function BirthdayApp() {
     <>
       <FloatingHearts />
       <LoveToast message={toast} />
+      <MusicPlayer />
       {unlocked ? (
         <>
           <main className="page-in mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 pb-36">
@@ -37,6 +40,7 @@ export function BirthdayApp() {
             </div>
             <ReasonsSection />
             <LoveLetter />
+            <LoveDeclaration />
             <InstallPrompt />
             <footer className="pt-4 text-center font-display text-xl text-primary">
               Hamesha apka, sirf apka 💖

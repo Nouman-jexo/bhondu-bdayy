@@ -7,17 +7,17 @@ import { heartBurst } from '@/lib/effects'
 import { playPop } from '@/lib/sounds'
 
 type Balloon = { id: number; left: number; duration: number; heart: boolean; color: string; size: number }
-type Popup = { id: number; x: number; y: number; text: string }
 
 const COLORS = ['#f472b6', '#ec4899', '#f9a8d4', '#e8a598', '#db2777', '#fbcfe8']
 const MAX_BALLOONS = 7
 
 export function BalloonGame() {
   const [balloons, setBalloons] = useState<Balloon[]>([])
-  const [popups, setPopups] = useState<Popup[]>([])
+  const [latestCompliment, setLatestCompliment] = useState<string | null>(null)
+  const [complimentKey, setComplimentKey] = useState(0)
   const [count, setCount] = useState(0)
   const idRef = useRef(0)
-  const areaRef = useRef<HTMLDivElement>(null)
+  const complimentTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const spawn = () => {
@@ -28,7 +28,7 @@ export function BalloonGame() {
           ...list,
           {
             id,
-            left: 5 + Math.random() * 75,
+            left: 6 + Math.random() * 74,
             duration: 5 + Math.random() * 3,
             heart: Math.random() > 0.5,
             color: COLORS[id % COLORS.length],
@@ -39,43 +39,62 @@ export function BalloonGame() {
     }
     spawn()
     const timer = setInterval(spawn, 850)
-    return () => clearInterval(timer)
+    return () => {
+      clearInterval(timer)
+      if (complimentTimeoutRef.current) clearTimeout(complimentTimeoutRef.current)
+    }
   }, [])
 
   const removeBalloon = (id: number) => setBalloons((list) => list.filter((b) => b.id !== id))
 
   const pop = (balloon: Balloon, e: React.PointerEvent) => {
-    const rect = areaRef.current?.getBoundingClientRect()
-    if (!rect) return
     removeBalloon(balloon.id)
     playPop()
     heartBurst(e.clientX, e.clientY, 10)
     setCount((c) => c + 1)
-    const popup: Popup = {
-      id: balloon.id,
-      x: Math.min(Math.max(e.clientX - rect.left, 70), rect.width - 70),
-      y: e.clientY - rect.top,
-      text: BALLOON_COMPLIMENTS[Math.floor(Math.random() * BALLOON_COMPLIMENTS.length)],
-    }
-    setPopups((list) => [...list, popup])
-    setTimeout(() => setPopups((list) => list.filter((p) => p.id !== popup.id)), 1600)
+
+    const randomCompliment = BALLOON_COMPLIMENTS[Math.floor(Math.random() * BALLOON_COMPLIMENTS.length)]
+    setLatestCompliment(randomCompliment)
+    setComplimentKey((k) => k + 1)
+
+    if (complimentTimeoutRef.current) clearTimeout(complimentTimeoutRef.current)
+    complimentTimeoutRef.current = setTimeout(() => {
+      setLatestCompliment(null)
+    }, 2800)
   }
 
   return (
-    <section aria-labelledby="balloon-title" className="glass flex flex-col gap-4 rounded-3xl p-5">
+    <section aria-labelledby="balloon-title" className="glass flex flex-col gap-4 rounded-3xl p-4 sm:p-5">
       <header className="flex flex-col gap-1">
-        <h2 id="balloon-title" className="font-display text-2xl text-foreground">
+        <h2 id="balloon-title" className="font-display text-xl text-foreground sm:text-2xl">
           Pop the Love Balloons 🎈
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground sm:text-sm">
           Har balloon mein ek chota sa compliment chupa hai. Jaldi jaldi pop karo!
         </p>
       </header>
 
-      <div
-        ref={areaRef}
-        className="relative h-80 touch-manipulation overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-card/40 to-primary/10"
-      >
+      {/* Prominent compliment banner that NEVER crops out */}
+      <div className="flex min-h-12 w-full items-center justify-center">
+        {latestCompliment ? (
+          <div
+            key={complimentKey}
+            className="toast-in flex w-full max-w-sm items-center justify-center gap-1.5 rounded-2xl border border-primary/40 bg-card/95 px-3 py-2 text-center shadow-lg backdrop-blur-md"
+          >
+            <span className="text-sm">✨</span>
+            <span className="font-display text-sm font-bold text-primary sm:text-base">
+              {latestCompliment}
+            </span>
+            <span className="text-sm">💖</span>
+          </div>
+        ) : (
+          <p className="text-center text-xs italic text-muted-foreground">
+            Kisi bhi balloon ko tap karo compliment dekhne ke liye!
+          </p>
+        )}
+      </div>
+
+      <div className="relative h-72 touch-manipulation overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-card/40 to-primary/10">
         {balloons.map((b) => (
           <button
             key={b.id}
@@ -103,16 +122,6 @@ export function BalloonGame() {
             )}
             <span className="h-10 w-px bg-foreground/30" />
           </button>
-        ))}
-
-        {popups.map((p) => (
-          <span
-            key={p.id}
-            className="compliment-pop pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-sm font-bold text-primary shadow-lg"
-            style={{ left: p.x, top: p.y }}
-          >
-            {p.text}
-          </span>
         ))}
       </div>
 

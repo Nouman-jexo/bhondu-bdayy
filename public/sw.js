@@ -1,5 +1,23 @@
-const CACHE = 'aleena-v1'
-const PRECACHE = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/images/panda.png']
+const CACHE = 'aleena-v2'
+const PRECACHE = [
+  '/',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/images/panda.png',
+  '/images/vintage-paper.png',
+  '/images/gf-1.jpeg',
+  '/images/gf-2.jpeg',
+  '/images/gf-3.jpeg',
+  '/images/gf-4.jpeg',
+  '/images/gf-5.jpeg',
+  '/images/user-1.jpeg',
+  '/images/user-2.jpeg',
+  '/images/user-3.jpeg',
+  '/images/user-4.jpeg',
+  '/images/user-5.jpeg',
+  '/audio/bgm.mp3',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)))
