@@ -45,7 +45,7 @@ export function LoveLetter() {
 
           <p className="font-bold uppercase tracking-wide">ALWAYS STAY HAPPY MERI JAAN💋</p>
           <p className="font-bold uppercase tracking-wide">
-            AND REMEMBER THERE IS SOMEONE WHO ALWAYS PRAYS FOR YOUR HAPPINESS, YOUR WELLBEING AND YOUr SUCCESS😋
+            AND REMEMBER THERE IS SOMEONE WHO ALWAYS PRAYS FOR YOUR HAPPINESS, YOUR WELLBEING AND YOU SUCCESS😋
           </p>
 
           <p className="flex flex-col pt-2 text-center font-display text-2xl leading-snug text-[#9b1d3d]">

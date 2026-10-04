@@ -23,7 +23,6 @@ export function FloatingHearts() {
             animationDuration: `${heart.duration}s`,
             animationDelay: `${heart.delay}s`,
             opacity: heart.opacity,
-            visibility: i === 1 ? 'hidden' : 'visible',
           }}
         >
           {heart.glyph}
