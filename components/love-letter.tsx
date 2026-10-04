@@ -29,7 +29,7 @@ export function LoveLetter() {
       </h2>
 
       <article
-        className="relative overflow-hidden rounded-xl bg-[#ead9b8] bg-cover bg-center px-5 py-7 text-[#4a2c1a] shadow-2xl shadow-black/40 ring-1 ring-[#b8946a]/50 sm:px-10 sm:py-10"
+        className="relative overflow-hidden rounded-xl bg-[#f0e2cc] bg-cover bg-center px-5 py-7 text-[#5c3a1e] shadow-2xl shadow-black/40 ring-1 ring-[#c9a96e]/50 sm:px-10 sm:py-10"
         style={{ backgroundImage: "url('/images/vintage-paper.png')" }}
       >
         <div className="flex flex-col gap-4 text-pretty text-[15px] font-semibold leading-relaxed [overflow-wrap:anywhere] sm:text-base">
@@ -48,7 +48,7 @@ export function LoveLetter() {
             AND REMEMBER THERE IS SOMEONE WHO ALWAYS PRAYS FOR YOUR HAPPINESS, YOUR WELLBEING AND YOU SUCCESS😋
           </p>
 
-          <p className="flex flex-col pt-2 text-center font-display text-2xl leading-snug text-[#9b1d3d]">
+          <p className="flex flex-col pt-2 text-center font-display text-2xl leading-snug text-[#c04428]">
             {CLOSING.map((word) => (
               <span key={word}>{word}</span>
             ))}

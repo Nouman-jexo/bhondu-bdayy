@@ -67,7 +67,7 @@ export function LoveDeclaration() {
               opacity: inView ? 0.32 : 0.12,
             }}
           >
-            <div className="relative size-full overflow-hidden rounded-2xl border border-primary/30 shadow-[0_10px_25px_rgba(219,39,119,0.25)] ring-2 ring-white/20">
+            <div className="relative size-full overflow-hidden rounded-2xl border border-primary/30 shadow-[0_10px_25px_rgba(232,93,74,0.25)] ring-2 ring-white/20">
               <Image
                 src={photo.src}
                 alt={photo.alt}
@@ -82,7 +82,7 @@ export function LoveDeclaration() {
         ))}
 
         {/* Ambient radial glow in center to keep text legible */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,245,248,0.78)_0%,rgba(255,245,248,0.35)_55%,transparent_85%)] dark:bg-[radial-gradient(circle_at_center,rgba(40,16,28,0.85)_0%,rgba(40,16,28,0.45)_55%,transparent_85%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,240,232,0.78)_0%,rgba(255,240,232,0.35)_55%,transparent_85%)] dark:bg-[radial-gradient(circle_at_center,rgba(40,20,16,0.85)_0%,rgba(40,20,16,0.45)_55%,transparent_85%)]" />
       </div>
 
       {/* Main Calligraphy & Italic Text - Reveals left-to-right when scrolled completely */}
@@ -93,7 +93,7 @@ export function LoveDeclaration() {
           }`}
         >
           <p
-            className="select-none font-display text-[clamp(2.1rem,11.5vw,4.5rem)] italic leading-tight tracking-wide text-primary drop-shadow-[0_4px_22px_rgba(219,39,119,0.45)]"
+            className="select-none font-display text-[clamp(2.1rem,11.5vw,4.5rem)] italic leading-tight tracking-wide text-primary drop-shadow-[0_4px_22px_rgba(232,93,74,0.45)]"
             style={{ fontStyle: 'italic' }}
           >
             {'I Love You, Meri Jaan!'}

@@ -8,7 +8,7 @@ import { playPop } from '@/lib/sounds'
 
 type Balloon = { id: number; left: number; duration: number; heart: boolean; color: string; size: number }
 
-const COLORS = ['#f472b6', '#ec4899', '#f9a8d4', '#e8a598', '#db2777', '#fbcfe8']
+const COLORS = ['#e85d4a', '#e76f51', '#f4a261', '#f0a878', '#d4663b', '#fbbf9c']
 const MAX_BALLOONS = 7
 
 export function BalloonGame() {
@@ -108,7 +108,7 @@ export function BalloonGame() {
             {b.heart ? (
               <Heart
                 style={{ width: b.size, height: b.size, color: b.color, fill: b.color }}
-                className="drop-shadow-[0_6px_10px_rgba(219,39,119,0.35)]"
+                className="drop-shadow-[0_6px_10px_rgba(232,93,74,0.35)]"
               />
             ) : (
               <span

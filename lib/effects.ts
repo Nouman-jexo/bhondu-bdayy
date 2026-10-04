@@ -1,5 +1,5 @@
 const HEART_EMOJIS = ['💖', '💕', '💗', '✨', '💘', '🌸']
-const CONFETTI_COLORS = ['#ec4899', '#f9a8d4', '#f472b6', '#e8a598', '#fde2e4', '#c026d3']
+const CONFETTI_COLORS = ['#e85d4a', '#f4a261', '#e76f51', '#f0a878', '#fde2e4', '#d4663b']
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
