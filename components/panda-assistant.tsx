@@ -40,6 +40,7 @@ export function PandaAssistant() {
           height={80}
           className="size-full object-cover [image-rendering:pixelated]"
           priority
+          style={{ visibility: 'hidden' }}
         />
       </button>
 

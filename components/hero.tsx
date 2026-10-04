@@ -12,7 +12,11 @@ function Letter({ char, index }: { char: string; index: number }) {
       onPointerDown={() => setBouncing(true)}
       onAnimationEnd={(e) => e.animationName === 'letter-bounce' && setBouncing(false)}
       className={cn('gradient-letter inline-block cursor-pointer select-none', bouncing && 'letter-bounce')}
-      style={{ animationDelay: bouncing ? '0s' : `${index * -0.15}s` }}
+      style={{ 
+        animationDelay: bouncing ? '0s' : `${index * -0.15}s`,
+        fontFamily: index === 0 ? 'inherit' : undefined,
+        borderRadius: index === 0 ? '10px' : undefined,
+      }}
     >
       {char}
     </span>
