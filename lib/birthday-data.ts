@@ -1,25 +1,25 @@
 export const SECRET_PIN = '15102007'
 
 export const WRONG_PIN_MESSAGES = [
-  'Galat code h meri jaan! Dobara try karo...',
-  'Aise kaise enter ho jaogi Bhondu? Correct passcode daalo! 😜',
-  'Wrong date! Hint: Apka sabse special day...',
-  'Nahi nahi, soch samajh kar type karo mere pyare panda! ❤️',
-  'Uff! Itna bhi mushkil nahi hai yaar, try again 🙈',
-  'Oho Madam ji, yeh wala nahi! Ek aur try? 💭',
+  'Galat code hai meri jaan! Dobara try karo...',
+  'Aise kaise enter ho jaogi Bhondu? Correct passcode daalo! 😝',
+  'chall naa itna bhi ni pta teko?!',
+  'Nahi nahi, sasura socho Meri Jan k Tottey! ❤️',
+  'Itna bhi mushkil nahi hai yaar, chall nawh! 🙈',
+  'Mah Jawn, yeh wala nahi! Ek aur try? 💭',
 ]
 
 export const BALLOON_COMPLIMENTS = [
-  'Apki smile sabse best hai! ✨',
-  'Always stay happy! 🌸',
+  'Ap ho mere Haseen O Jaleel!😝✨',
+  'Mah Jan ka Tottaa!! 🌸',
   'My favorite person ever!',
-  'Ap bohot pyari ho! 💖',
+  'Mera Pyara Bachaww! 💖',
   'Your laugh = my fav song 🎶',
-  'Duniya ki sabse cute larki!',
+  'Dunya ki aik lrki jiski badmoshi chlti!',
   'Proud of you, always! 🌟',
   'Ap meri khushi ho 💕',
-  'Shine bright, birthday girl! ✨',
-  'Itni pyari kyun ho? 🥺',
+  'Mah Shonu Monu! ✨',
+  'Itni pyari kyun ho? ',
 ]
 
 export const REASONS = [
@@ -31,27 +31,27 @@ export const REASONS = [
   {
     title: 'Beauty & Charm',
     emoji: '🌹',
-    text: 'Apki breathtaking beauty... Ap bas jaisa muskurati ho, mera poora din ban jata hai.',
+    text: 'Apki breathtaking beauty... Ap bas jaisa smile krti ho, mera poora din ban jata hai.',
   },
   {
     title: 'Attractiveness',
     emoji: '✨',
-    text: 'Apki magnetic personality! Log kitne bhi hon, meri nazar sirf ap par theherati hai.',
+    text: 'Apki magnetic personality! Log kitne bhi hon, meri nazar sirf ap par rukti hai.',
   },
   {
     title: 'Intelligence',
     emoji: '🧠',
-    text: 'Apka tez dimag! Ap itni smart ho ke har mushkil cheez ko asan bana deti ho.',
+    text: 'Apka tez dimag!🙄🙄 Bohot intelligent bachaw meraa!!🙈',
   },
   {
     title: 'Playfully Stupid Moments',
     emoji: '🙈',
-    text: 'Apki woh cute si playful stupidity jab ap choti choti baat par confuse hoti ho! ❤️',
+    text: 'Apka bhondu pan hi to meko sabse acha lgta hai! ❤️',
   },
   {
     title: 'Childish Innocence',
     emoji: '🧸',
-    text: 'Apki childish harkatein! Rehna hamesha bilkul aisi hi, Meri Bhondu!',
+    text: 'Apki bhondu harkatein! Rehna hamesha bilkul aisi hi, Meri Bhondu!',
   },
   {
     title: 'Unconditional Love',
