@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bhondu-pwa-v9';
+const CACHE_NAME = 'bhondu-pwa-v10';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -8,7 +8,7 @@ const PRECACHE_ASSETS = [
   '/audio/bgm.mp3'
 ];
 
-// Install: Cache each asset individually so one missing file won't block bgm.mp3
+// Install: Cache core assets individually
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: Delete old caches immediately
+// Activate: Remove older cache versions immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -43,11 +43,10 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || !request.url.startsWith('http')) return;
 
-  // AUDIO & MEDIA RANGE REQUEST HANDLER
+  // 1. AUDIO & MEDIA RANGE REQUEST HANDLER
   if (request.url.includes('/audio/') || request.url.endsWith('.mp3')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        // Match against exact request or fallback audio path with search parameters ignored
         let cachedResponse = await cache.match(request, { ignoreSearch: true });
         if (!cachedResponse) {
           cachedResponse = await cache.match('/audio/bgm.mp3', { ignoreSearch: true });
@@ -62,7 +61,6 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // Slice cached blob into 206 Partial Content required by mobile browsers
         const blob = await cachedResponse.blob();
         const parts = range.replace(/bytes=/, '').split('-');
         let start = parseInt(parts[0], 10);
@@ -88,7 +86,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // STANDARD PAGES & ASSETS
+  // 2. PAGES, STYLES, JS, NEXT.JS IMAGES & TEXTURES
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
@@ -97,9 +95,13 @@ self.addEventListener('fetch', (event) => {
 
       return fetch(request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          // Save valid responses AND opaque cross-origin responses (status === 0 / type === 'opaque')
+          if (
+            networkResponse &&
+            (networkResponse.status === 200 || networkResponse.type === 'opaque')
+          ) {
             const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           }
           return networkResponse;
         })
