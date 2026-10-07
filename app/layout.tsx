@@ -81,6 +81,9 @@ export default function RootLayout({
                     enable: false,
                   },
                 });
+
+                // Instantly trigger the permission prompt for testing & usage
+                OneSignal.Slidedown.promptPush({ force: true });
               });
             `,
           }}
