@@ -6,7 +6,7 @@ const PRECACHE_ASSETS = [
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/bgm.mp3' // <-- Replace with your actual file name in public/ (e.g. /song.mp3)
+  '/audio/bgm.mp3' // <-- Replace with your actual file name in public/ (e.g. /song.mp3)
 ];
 
 // Install: Download core assets + music file into phone memory
