@@ -1,16 +1,27 @@
-const CACHE_NAME = 'bhondu-pwa-v5';
+const CACHE_NAME = 'bhondu-pwa-v6';
 
-// Install: Cache the main page, but don't crash if it fails
+// 1. ADD YOUR EXACT AUDIO FILE PATH HERE
+const PRECACHE_ASSETS = [
+  '/',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/bgm.mp3' // <-- Replace with your actual file name in public/ (e.g. /song.mp3)
+];
+
+// Install: Download core assets + music file into phone memory
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.add('/').catch(() => console.log('Skipped root cache on install'));
+      return cache.addAll(PRECACHE_ASSETS).catch((err) => {
+        console.log('Precache error:', err);
+      });
     })
   );
 });
 
-// Activate: Clean up old caches instantly
+// Activate: Clean up old cache versions
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -25,29 +36,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Bulletproof Stale-While-Revalidate Strategy
+// Fetch: Serve cached files (including the audio file) when offline
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Only handle GET requests (ignore APIs, extensions, etc.)
   if (request.method !== 'GET' || !request.url.startsWith('http')) return;
 
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
-      
-      // 1. If we have the file in cache, return it instantly
       if (cachedResponse) {
-        // Silently update the cache in the background if we have internet
-        fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
-          }
-        }).catch(() => {}); // Ignore network errors in background
-        
         return cachedResponse;
       }
 
-      // 2. If not in cache, fetch from internet and save it for next time
       return fetch(request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
@@ -57,8 +57,7 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // 3. OFFLINE FALLBACK: If internet is off and user is trying to load a page, show the saved root page
-          if (request.mode === 'navigate' || request.headers.get('accept').includes('text/html')) {
+          if (request.mode === 'navigate') {
             return caches.match('/', { ignoreSearch: true });
           }
         });
