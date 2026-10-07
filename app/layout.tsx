@@ -64,7 +64,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* OneSignal Push Notifications */}
+        {/* OneSignal Push Notificationss */}
         <script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           defer
