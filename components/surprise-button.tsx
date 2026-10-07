@@ -6,7 +6,6 @@ export function SurpriseButton() {
   const [isOpen, setIsOpen] = useState(false)
   const [noCount, setNoCount] = useState(0)
 
-  // The text sequence for the NO button
   const noTexts = [
     "NO",
     "Yawr ni naw",
@@ -21,16 +20,27 @@ export function SurpriseButton() {
   const handleYes = async () => {
     setIsOpen(false)
 
-    // 1. Instantly trigger the browser's native notification popup
     if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        alert("Notifications are ALREADY allowed on your phone! You're all set ❤️");
+        return;
+      }
+
+      if (Notification.permission === 'denied') {
+        alert("Chrome is still blocking this specific website! Tap the Tune/Lock icon next to the URL bar, tap Permissions, and set Notifications to Allow.");
+        return;
+      }
+
       try {
-        await Notification.requestPermission();
+        const res = await Notification.requestPermission();
+        if (res === 'granted') {
+          alert("Yay! Notifications enabled successfully ❤️");
+        }
       } catch (err) {
-        console.error('Notification permission error:', err);
+        console.error(err);
       }
     }
 
-    // 2. Notify OneSignal SDK v16 of the permission request
     if (typeof window !== 'undefined') {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.OneSignalDeferred.push(async function(OneSignal: any) {
@@ -47,7 +57,6 @@ export function SurpriseButton() {
 
   return (
     <>
-      {/* Top Left Floating Button */}
       <div className="fixed top-4 left-4 z-[9999]">
         <button
           onClick={() => setIsOpen(true)}
@@ -57,7 +66,6 @@ export function SurpriseButton() {
         </button>
       </div>
 
-      {/* Modal Popup overlay */}
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-[10000] bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-6">
@@ -70,7 +78,6 @@ export function SurpriseButton() {
             </p>
             
             <div className="flex items-center justify-center gap-4 w-full min-h-[100px] my-2 relative overflow-visible">
-              {/* YES Button - Gets 15% larger each click! */}
               <button
                 onClick={handleYes}
                 style={{ transform: `scale(${1 + noCount * 0.15})` }}
@@ -79,7 +86,6 @@ export function SurpriseButton() {
                 YES ❤️
               </button>
               
-              {/* NO Button - Sits side-by-side and shrinks! */}
               {noCount < 5 && (
                 <button
                   onClick={handleNo}
