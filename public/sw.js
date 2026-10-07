@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bhondu-pwa-v8';
+const CACHE_NAME = 'bhondu-pwa-v9';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -8,11 +8,17 @@ const PRECACHE_ASSETS = [
   '/audio/bgm.mp3'
 ];
 
-// Install: Save core assets + audio file into storage
+// Install: Cache each asset individually so one missing file won't block bgm.mp3
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return Promise.all(
+        PRECACHE_ASSETS.map((asset) =>
+          cache.add(asset).catch((err) => console.warn(`Failed to cache ${asset}:`, err))
+        )
+      );
+    })
   );
 });
 
@@ -41,7 +47,12 @@ self.addEventListener('fetch', (event) => {
   if (request.url.includes('/audio/') || request.url.endsWith('.mp3')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        const cachedResponse = await cache.match('/audio/bgm.mp3');
+        // Match against exact request or fallback audio path with search parameters ignored
+        let cachedResponse = await cache.match(request, { ignoreSearch: true });
+        if (!cachedResponse) {
+          cachedResponse = await cache.match('/audio/bgm.mp3', { ignoreSearch: true });
+        }
+
         if (!cachedResponse) {
           return fetch(request);
         }
@@ -51,11 +62,15 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // Slice cached blob into 206 Partial Content required by mobile HTML5 audio
+        // Slice cached blob into 206 Partial Content required by mobile browsers
         const blob = await cachedResponse.blob();
         const parts = range.replace(/bytes=/, '').split('-');
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : blob.size - 1;
+        let start = parseInt(parts[0], 10);
+        let end = parts[1] ? parseInt(parts[1], 10) : blob.size - 1;
+
+        if (isNaN(start)) start = 0;
+        if (isNaN(end) || end >= blob.size) end = blob.size - 1;
+
         const chunk = blob.slice(start, end + 1);
 
         return new Response(chunk, {
