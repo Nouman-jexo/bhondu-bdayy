@@ -1,21 +1,16 @@
-const CACHE_NAME = 'bhondu-pwa-v1';
+const CACHE_NAME = 'bhondu-pwa-v5';
 
-const ASSETS_TO_CACHE = [
-  '/',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
-];
-
-// Install: Pre-cache assets and skip waiting immediately
+// Install: Cache the main page, but don't crash if it fails
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.add('/').catch(() => console.log('Skipped root cache on install'));
+    })
   );
 });
 
-// Activate: Claim clients immediately so PWABuilder detects it on load
+// Activate: Clean up old caches instantly
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -30,34 +25,41 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Serve from cache, update in background, or fall back to '/'
+// Fetch: Bulletproof Stale-While-Revalidate Strategy
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+
+  // Only handle GET requests (ignore APIs, extensions, etc.)
+  if (request.method !== 'GET' || !request.url.startsWith('http')) return;
 
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
+    caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
+      
+      // 1. If we have the file in cache, return it instantly
       if (cachedResponse) {
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-            }
-          })
-          .catch(() => {});
+        // Silently update the cache in the background if we have internet
+        fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
+          }
+        }).catch(() => {}); // Ignore network errors in background
+        
         return cachedResponse;
       }
 
-      return fetch(event.request)
+      // 2. If not in cache, fetch from internet and save it for next time
+      return fetch(request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           }
           return networkResponse;
         })
         .catch(() => {
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
+          // 3. OFFLINE FALLBACK: If internet is off and user is trying to load a page, show the saved root page
+          if (request.mode === 'navigate' || request.headers.get('accept').includes('text/html')) {
+            return caches.match('/', { ignoreSearch: true });
           }
         });
     })
