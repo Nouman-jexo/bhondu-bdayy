@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Pacifico, Quicksand } from 'next/font/google'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
+import { SurpriseButton } from '@/components/surprise-button'
 import './globals.css'
 
 const quicksand = Quicksand({
@@ -49,6 +50,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${quicksand.variable} ${pacifico.variable} light bg-background`}>
       <body className="overflow-x-hidden font-sans antialiased">
+        <SurpriseButton />
+        
         {children}
         <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
@@ -64,7 +67,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* OneSignal Push Notificationss */}
+        {/* OneSignal Push Notifications */}
         <script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           defer
@@ -81,9 +84,6 @@ export default function RootLayout({
                     enable: false,
                   },
                 });
-
-                // Instantly trigger the permission prompt for testing & usage
-                OneSignal.Slidedown.promptPush({ force: true });
               });
             `,
           }}
