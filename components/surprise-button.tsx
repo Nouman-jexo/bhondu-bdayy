@@ -40,7 +40,7 @@ export function SurpriseButton() {
   return (
     <>
       {/* Top Right Floating Button */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 left-4 z-[9999]">
         <button
           onClick={() => setIsOpen(true)}
           className="px-4 py-2 bg-[#e85d4a] hover:bg-[#d64b38] text-white rounded-full font-bold shadow-lg transition-all animate-bounce text-sm md:text-base font-sans"
