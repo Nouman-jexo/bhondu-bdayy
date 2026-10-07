@@ -1,45 +1,42 @@
-const CACHE_NAME = 'bhondu-bday-v3';
+const CACHE_NAME = 'bhondu-pwa-v1';
 
-// Core assets to pre-cache
-const STATIC_ASSETS = [
+const ASSETS_TO_CACHE = [
   '/',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-// Install Event: Cache essential shell
+// Install: Pre-cache assets and skip waiting immediately
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+  );
 });
 
-// Activate Event: Clear old caches and claim clients immediately
+// Activate: Claim clients immediately so PWABuilder detects it on load
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    caches.keys().then((keys) => {
+      return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
         })
-      )
-    ).then(() => self.clients.claim())
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch Event: Serve from cache, fallback to network & dynamically cache Next.js files
+// Fetch: Serve from cache, update in background, or fall back to '/'
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // 1. If found in cache, return cached version immediately
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
-        // Refresh cache in background if online
         fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
@@ -50,22 +47,15 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      // 2. Fetch from network and save all Next.js JS/CSS chunks to cache
       return fetch(event.request)
         .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
           }
-
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
           return networkResponse;
         })
         .catch(() => {
-          // 3. Offline fallback for page navigation
           if (event.request.mode === 'navigate') {
             return caches.match('/');
           }
