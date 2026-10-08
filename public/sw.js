@@ -1,116 +1,62 @@
-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-const CACHE_NAME = 'bhondu-pwa-v10';
+// 1. Safely import OneSignal without crashing when offline
+try {
+  importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+} catch (e) {
+  console.log('OneSignal SDK offline mode');
+}
 
-const PRECACHE_ASSETS = [
-  '/',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/audio/bgm.mp3'
-];
+const CACHE_NAME = 'bhondu-bdayy-v3';
 
-// Install: Cache core assets individually
+// 2. Install Event - Force immediate activation
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+});
+
+// 3. Activate Event - Clean up old cache versions & take control immediately
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        PRECACHE_ASSETS.map((asset) =>
-          cache.add(asset).catch((err) => console.warn(`Failed to cache ${asset}:`, err))
-        )
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
       );
     })
   );
+  self.clients.claim();
 });
 
-// Activate: Remove older cache versions immediately
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-// Fetch Event
+// 4. Fetch Event - Serve from network, cache on success, fallback to cache when offline
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
+  if (event.request.method !== 'GET') return;
 
-  if (request.method !== 'GET' || !request.url.startsWith('http')) return;
+  const url = new URL(event.request.url);
+  
+  // Only cache requests from our own domain
+  if (url.origin !== self.origin) return;
 
-  // 1. AUDIO & MEDIA RANGE REQUEST HANDLER
-  if (request.url.includes('/audio/') || request.url.endsWith('.mp3')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        let cachedResponse = await cache.match(request, { ignoreSearch: true });
-        if (!cachedResponse) {
-          cachedResponse = await cache.match('/audio/bgm.mp3', { ignoreSearch: true });
+  event.respondWith(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      try {
+        const networkResponse = await fetch(event.request);
+        if (networkResponse && networkResponse.status === 200) {
+          cache.put(event.request, networkResponse.clone());
         }
-
-        if (!cachedResponse) {
-          return fetch(request);
-        }
-
-        const range = request.headers.get('range');
-        if (!range) {
+        return networkResponse;
+      } catch (error) {
+        // Serve cached version when offline
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) {
           return cachedResponse;
         }
-
-        const blob = await cachedResponse.blob();
-        const parts = range.replace(/bytes=/, '').split('-');
-        let start = parseInt(parts[0], 10);
-        let end = parts[1] ? parseInt(parts[1], 10) : blob.size - 1;
-
-        if (isNaN(start)) start = 0;
-        if (isNaN(end) || end >= blob.size) end = blob.size - 1;
-
-        const chunk = blob.slice(start, end + 1);
-
-        return new Response(chunk, {
-          status: 206,
-          statusText: 'Partial Content',
-          headers: new Headers({
-            'Content-Type': 'audio/mpeg',
-            'Content-Range': `bytes ${start}-${end}/${blob.size}`,
-            'Content-Length': chunk.size,
-            'Accept-Ranges': 'bytes',
-          }),
-        });
-      })
-    );
-    return;
-  }
-
-  // 2. PAGES, STYLES, JS, NEXT.JS IMAGES & TEXTURES
-  event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
+        // Navigation fallback for main page
+        if (event.request.mode === 'navigate') {
+          return cache.match('/');
+        }
+        throw error;
       }
-
-      return fetch(request)
-        .then((networkResponse) => {
-          // Save valid responses AND opaque cross-origin responses (status === 0 / type === 'opaque')
-          if (
-            networkResponse &&
-            (networkResponse.status === 200 || networkResponse.type === 'opaque')
-          ) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          if (request.mode === 'navigate') {
-            return caches.match('/', { ignoreSearch: true });
-          }
-        });
     })
   );
 });
