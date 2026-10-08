@@ -1,63 +1,64 @@
-// 1. Safely import OneSignal without crashing when offline
+// 1. MUST keep OneSignal imported for notifications to work!
 try {
   importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 } catch (e) {
-  console.log('OneSignal SDK offline mode');
+  console.log('OneSignal offline fallback');
 }
 
-const CACHE_NAME = 'bhondu-bdayy-v5';
-
-const PRECACHE_ASSETS = [
+const CACHE = 'aleena-v2';
+const PRECACHE = [
   '/',
-  '/manifest.json',
-  '/favicon.ico',
-  '/icon.png'
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/images/panda.png',
+  '/images/vintage-paper.png',
+  '/images/gf-1.jpeg',
+  '/images/gf-2.jpeg',
+  '/images/gf-3.jpeg',
+  '/images/gf-4.jpeg',
+  '/images/gf-5.jpeg',
+  '/images/user-1.jpeg',
+  '/images/user-2.jpeg',
+  '/images/user-3.jpeg',
+  '/images/user-4.jpeg',
+  '/images/user-5.jpeg',
+  '/audio/bgm.mp3',
 ];
 
-// 2. Install Event - Pre-cache core files
+// 2. Install Event - Individual file caching (won't crash if 1 file fails)
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
+    caches.open(CACHE).then((cache) => {
+      return Promise.allSettled(
+        PRECACHE.map((url) => cache.add(url))
+      );
+    })
   );
   self.skipWaiting();
 });
 
-// 3. Activate Event - Clean up old caches & take control immediately
+// 3. Activate Event
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Helper: Synthesize HTTP 206 Range Responses for Offline Audio Playback
-async function handleAudioRangeRequest(request) {
-  const cache = await caches.open(CACHE_NAME);
-  let response = await cache.match(request, { ignoreSearch: true });
+// Helper for HTTP Range Requests (Fixes MP3 playback offline)
+async function handleAudioRange(request) {
+  const cache = await caches.open(CACHE);
+  const response = await cache.match(request, { ignoreSearch: true });
 
-  if (!response) {
-    const cleanRequest = new Request(request.url, { method: 'GET' });
-    response = await cache.match(cleanRequest);
-  }
-
-  // If not cached, fetch from network and cache for future offline use
   if (!response) {
     try {
-      const netResponse = await fetch(request);
-      if (netResponse && (netResponse.status === 200 || netResponse.type === 'opaque')) {
-        cache.put(request, netResponse.clone());
-      }
-      return netResponse;
-    } catch (err) {
-      return new Response('', { status: 416, statusText: 'Range Not Satisfiable' });
+      const netResp = await fetch(request);
+      if (netResp.ok) cache.put(request, netResp.clone());
+      return netResp;
+    } catch (e) {
+      return new Response('', { status: 416 });
     }
   }
 
@@ -69,75 +70,59 @@ async function handleAudioRangeRequest(request) {
   const start = parseInt(parts[0], 10) || 0;
   const end = parts[1] ? parseInt(parts[1], 10) : buffer.byteLength - 1;
 
-  const slicedBuffer = buffer.slice(start, end + 1);
-  return new Response(slicedBuffer, {
+  return new Response(buffer.slice(start, end + 1), {
     status: 206,
     statusText: 'Partial Content',
     headers: {
       'Content-Type': response.headers.get('Content-Type') || 'audio/mpeg',
       'Content-Range': `bytes ${start}-${end}/${buffer.byteLength}`,
-      'Content-Length': slicedBuffer.byteLength,
-      'Accept-Ranges': 'bytes'
-    }
+      'Content-Length': end - start + 1,
+      'Accept-Ranges': 'bytes',
+    },
   });
 }
 
-// 4. Fetch Event Handler
+// 4. Fetch Event
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  if (request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
+  const url = new URL(request.url);
 
-  // Strategy A: Audio Files & Media Range Requests
-  if (/\.(mp3|wav|ogg|m4a|aac)$/i.test(url.pathname) || event.request.headers.has('range')) {
-    event.respondWith(handleAudioRangeRequest(event.request));
+  // Handle MP3 audio streaming offline
+  if (url.pathname.endsWith('.mp3') || request.headers.has('range')) {
+    event.respondWith(handleAudioRange(request));
     return;
   }
 
-  // Strategy B: Static Assets & Images
-  const isAsset =
-    url.pathname.startsWith('/_next/image') ||
-    url.pathname.startsWith('/_next/static') ||
-    /\.(png|jpg|jpeg|svg|webp|gif|ico|woff2?|css|js)$/i.test(url.pathname);
+  if (url.origin !== self.location.origin) return;
 
-  if (isAsset) {
+  // Navigation requests (Pages)
+  if (request.mode === 'navigate') {
     event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cachedResponse = await cache.match(event.request);
-        if (cachedResponse) return cachedResponse;
-
-        try {
-          const networkResponse = await fetch(event.request);
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        } catch (error) {
-          return new Response('Asset unavailable offline', { status: 404 });
-        }
-      })
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
     );
     return;
   }
 
-  // Strategy C: HTML Page Navigation
+  // Static Assets
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      try {
-        const networkResponse = await fetch(event.request);
-        if (networkResponse && networkResponse.status === 200) {
-          cache.put(event.request, networkResponse.clone());
-        }
-        return networkResponse;
-      } catch (error) {
-        const cachedResponse = await cache.match(event.request);
-        if (cachedResponse) return cachedResponse;
-
-        if (event.request.mode === 'navigate') {
-          return cache.match('/');
-        }
-        throw error;
-      }
-    })
+    caches.match(request).then(
+      (cached) =>
+        cached ||
+        fetch(request).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+    )
   );
 });
