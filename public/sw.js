@@ -5,7 +5,7 @@ try {
   console.log('OneSignal offline mode');
 }
 
-const CACHE_NAME = 'aleena-offline-v7';
+const CACHE_NAME = 'aleena-pwa-v8';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -27,8 +27,9 @@ const PRECACHE_ASSETS = [
   '/audio/bgm.mp3'
 ];
 
-// 2. Install Event - Pre-cache all core app assets
+// 2. Install Event - Force immediate takeover
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
@@ -36,10 +37,9 @@ self.addEventListener('install', (event) => {
       );
     })
   );
-  self.skipWaiting();
 });
 
-// 3. Activate Event - Clear old caches and take control immediately
+// 3. Activate Event - Claim all open browser tabs immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -50,7 +50,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Helper: HTTP 206 Range Streamer for Offline MP3 Audio
+// Helper: HTTP 206 Range Request streamer for offline music
 async function handleAudioRange(request) {
   const cache = await caches.open(CACHE_NAME);
   let response = await cache.match(request, { ignoreSearch: true });
@@ -63,7 +63,7 @@ async function handleAudioRange(request) {
       }
       return netResp;
     } catch (e) {
-      return new Response('', { status: 416, statusText: 'Range Not Satisfiable' });
+      return new Response('', { status: 416 });
     }
   }
 
@@ -87,60 +87,48 @@ async function handleAudioRange(request) {
   });
 }
 
-// 4. Fetch Event Handler
+// 4. Fetch Event Handler - Cache-First with Network Fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
 
-  // Strategy A: Audio Streaming / Range Requests
+  // Strategy A: Stream MP3 Background Music
   if (url.pathname.endsWith('.mp3') || request.headers.has('range')) {
     event.respondWith(handleAudioRange(request));
     return;
   }
 
-  // Strategy B: Page Navigations & Next.js App Router (_rsc) Data Requests
-  if (request.mode === 'navigate' || url.searchParams.has('_rsc')) {
+  // Strategy B: Handle Page Navigation & Static Assets
+  if (url.origin === self.location.origin) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          const home = await caches.match('/');
-          if (home) return home;
-          return new Response('Offline', { status: 503, statusText: 'Offline' });
-        })
-    );
-    return;
-  }
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          // Serve from cache instantly, fetch update in background
+          fetch(request).then((networkResponse) => {
+            if (networkResponse && networkResponse.ok) {
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
+            }
+          }).catch(() => {});
+          return cachedResponse;
+        }
 
-  // Strategy C: Static Assets (Cache-First with Network Fallback)
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(request)
-        .then((networkResponse) => {
+        return fetch(request).then((networkResponse) => {
           if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
             const copy = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return networkResponse;
-        })
-        .catch(() => {
-          if (request.destination === 'image') {
-            return caches.match('/images/panda.png');
+        }).catch(async () => {
+          // Fallback to cached home page when offline
+          if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+            const cachedHome = await caches.match('/');
+            if (cachedHome) return cachedHome;
           }
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
         });
-    })
-  );
+      })
+    );
+  }
 });
