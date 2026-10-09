@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Pacifico, Quicksand } from 'next/font/google'
-import { ServiceWorkerRegister } from '@/components/service-worker-register'
+import Script from 'next/script'
 import { SurpriseButton } from '@/components/surprise-button'
 import './globals.css'
 
@@ -9,7 +9,6 @@ const quicksand = Quicksand({
   subsets: ['latin'],
   variable: '--font-quicksand',
 })
-
 const pacifico = Pacifico({
   subsets: ['latin'],
   weight: '400',
@@ -20,6 +19,7 @@ export const metadata: Metadata = {
   title: 'Happy Birthday Aleena! 💖',
   description: 'A tiny digital world dedicated only to you, my favorite human!',
   applicationName: 'For Aleena',
+  manifest: '/manifest.webmanifest', // Added missing manifest link
   appleWebApp: {
     capable: true,
     title: 'For Aleena',
@@ -51,43 +51,41 @@ export default function RootLayout({
     <html lang="en" className={`${quicksand.variable} ${pacifico.variable} light bg-background`}>
       <body className="overflow-x-hidden font-sans antialiased">
         <SurpriseButton />
-        
         {children}
-        <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
 
-        {/* Register Service Worker Script */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' });
-              }
-            `,
-          }}
-        />
+        {/* Service Worker Registration */}
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                  .then(reg => console.log('SW Registered:', reg.scope))
+                  .catch(err => console.error('SW Error:', err));
+              });
+            }
+          `}
+        </Script>
 
         {/* OneSignal Push Notifications */}
-        <script
+        <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          defer
+          strategy="afterInteractive"
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.OneSignalDeferred = window.OneSignalDeferred || [];
-              OneSignalDeferred.push(async function(OneSignal) {
-                await OneSignal.init({
-                  appId: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
-                  safari_web_id: "",
-                  notifyButton: {
-                    enable: false,
-                  },
-                });
+        <Script id="onesignal-init" strategy="afterInteractive">
+          {`
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(async function(OneSignal) {
+              await OneSignal.init({
+                appId: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
+                safari_web_id: "",
+                notifyButton: {
+                  enable: false,
+                },
               });
-            `,
-          }}
-        />
+            });
+          `}
+        </Script>
       </body>
     </html>
   )
