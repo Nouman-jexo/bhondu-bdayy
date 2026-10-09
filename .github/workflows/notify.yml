@@ -2,23 +2,63 @@ name: Send Daily Push Notification
 
 on:
   schedule:
-    - cron: '0 7 * * *' # 12:00 PM PKT (07:00 UTC)
+    - cron: '0 7 * * *' # Runs daily (adjust cron frequency if needed)
   workflow_dispatch:
 
 jobs:
   send-notification:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger OneSignal API
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Send Random Push Notification
+        env:
+          ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
         run: |
-          curl --request POST \
-            --url 'https://api.onesignal.com/notifications' \
-            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
-            --header 'Content-Type: application/json' \
-            --data '{
-              "app_id": "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
-              "include_subscription_ids": ["137d1d6a-cd25-403b-a109-c80f625b0295"],
-              "headings": {"en": "Ready for some love?"},
-              "contents": {"en": "Your daily dose of love is waiting. Tap to see what we’ve got!"},
-              "url": "https://bhondu-bdayy.vercel.app"
-            }'
+          node -e '
+            const fs = require("fs");
+            const https = require("https");
+
+            // Read messages from your repo
+            const messages = JSON.parse(fs.readFileSync("messages.json", "utf8"));
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+            const data = JSON.stringify({
+              app_id: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
+              include_subscription_ids: ["137d1d6a-cd25-403b-a109-c80f625b0295"],
+              headings: { en: "Reminder from me ❤️" },
+              contents: { en: randomMessage },
+              url: "https://bhondu-bdayy.vercel.app"
+            });
+
+            const req = https.request({
+              hostname: "api.onesignal.com",
+              path: "/notifications",
+              method: "POST",
+              headers: {
+                "Authorization": "Basic " + process.env.ONESIGNAL_REST_API_KEY,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(data)
+              }
+            }, (res) => {
+              let body = "";
+              res.on("data", (chunk) => body += chunk);
+              res.on("end", () => {
+                console.log(`Response: ${body}`);
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                  console.log("Notification sent successfully with message:", randomMessage);
+                } else {
+                  process.exit(1);
+                }
+              });
+            });
+
+            req.on("error", (e) => {
+              console.error(`Error: ${e.message}`);
+              process.exit(1);
+            });
+
+            req.write(data);
+            req.end();
+          '
