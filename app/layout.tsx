@@ -54,19 +54,29 @@ export default function RootLayout({
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
 
-        {/* Service Worker Registration */}
+       {/* Service Worker Registration - Fixes Load Event Race Condition */}
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
+              function registerSW() {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                  .then(reg => console.log('SW Registered:', reg.scope))
-                  .catch(err => console.error('SW Error:', err));
-              });
+                  .then(function(reg) {
+                    console.log('SW Registered successfully:', reg.scope);
+                    reg.update();
+                  })
+                  .catch(function(err) {
+                    console.error('SW Registration failed:', err);
+                  });
+              }
+
+              if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                registerSW();
+              } else {
+                window.addEventListener('load', registerSW);
+              }
             }
           `}
         </Script>
-
         {/* OneSignal Push Notifications */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
