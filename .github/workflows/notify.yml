@@ -2,7 +2,7 @@ name: Send Daily Push Notification
 
 on:
   schedule:
-    - cron: '0 7 * * *' # 12:00 PM PKT (07:00 UTC)
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,11 +11,10 @@ jobs:
     steps:
       - name: Trigger OneSignal API
         run: |
-          curl --request POST \
-            --url 'https://onesignal.com/api/v1/notifications' \
-            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
-            --header 'Content-Type: application/json' \
-            --data '{
+          curl -X POST "https://onesignal.com/api/v1/notifications" \
+            -H "Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{
               "app_id": "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
               "included_segments": ["Subscribed Users"],
               "headings": {"en": "Ready for some love?"},
