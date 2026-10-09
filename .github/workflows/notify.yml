@@ -1,82 +1,29 @@
-name: Send Daily Automated Push Notification
+name: Send Daily Push Notification
 
 on:
   schedule:
-    # Wakes up ONCE a day at 12:05 AM PKT (19:05 UTC) to roll the dice for the day
-    - cron: '5 19 * * *' 
-  workflow_dispatch: # Allows manual testing anytime
+    # This is set to 07:00 UTC, which equals exactly 12:00 PM PKT (Noon)
+    # Change the "7" to whatever UTC hour you want.
+    - cron: '0 7 * * *'
+  
+  # This line is critical: It adds a "Run workflow" button in GitHub 
+  # so you can manually test this exact script anytime you want!
+  workflow_dispatch: 
 
 jobs:
-  schedule-notifications:
+  send-notification:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Generate Random Times and Schedule via OneSignal
-        env:
-          APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
-          API_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
+      - name: Trigger OneSignal API
         run: |
-          cat << 'EOF' > scheduler.py
-          import json, random, os, urllib.request
-          from datetime import datetime, timedelta, timezone
-
-          messages = json.load(open('messages.json'))
-          app_id = os.environ['APP_ID']
-          api_key = os.environ['API_KEY']
-
-          # Setup Pakistan Standard Time (UTC+5)
-          pkt_tz = timezone(timedelta(hours=5))
-          now = datetime.now(pkt_tz)
-
-          # Assign priorities to different hours of the day
-          hours = list(range(24))
-          weights = []
-          for h in hours:
-              # Priority windows: 2am-4am, 11am-2pm, 5pm-9pm
-              if h in [2, 3, 4, 11, 12, 13, 17, 18, 19, 20, 21]:
-                  weights.append(6) # High chance of picking these hours
-              else:
-                  weights.append(1) # Low chance (but still possible!)
-
-          # Roll the dice to pick 7 random hours based on the weights
-          selected_hours = random.choices(hours, weights=weights, k=7)
-          
-          for h in selected_hours:
-              m = random.randint(0, 59) # Pick a completely random minute
-              
-              target_time = now.replace(hour=h, minute=m, second=0)
-              
-              # If testing manually during the day, ensure past times are pushed to tomorrow
-              if target_time < now:
-                  target_time += timedelta(days=1)
-                  
-              # Format time for OneSignal
-              send_after = target_time.strftime('%Y-%m-%d %H:%M:%S GMT+0500')
-              msg = random.choice(messages)
-              
-              # Build the package for OneSignal
-              payload = {
-                  "app_id": app_id,
-                  "included_segments": ["Subscribed Users"],
-                  "headings": {"en": "Special Message ❤️"},
-                  "contents": {"en": msg},
-                  "send_after": send_after # Tells OneSignal exactly when to deliver it
-              }
-              
-              # Send the scheduled package to OneSignal
-              req = urllib.request.Request(
-                  'https://onesignal.com/api/v1/notifications',
-                  data=json.dumps(payload).encode('utf-8'),
-                  headers={
-                      'Authorization': f'Key {api_key}',
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json'
-                  }
-              )
-              urllib.request.urlopen(req)
-              print(f"Scheduled -> {send_after} PKT: {msg}")
-
-          EOF
-          python3 scheduler.py
+          curl --request POST \
+            --url 'https://onesignal.com/api/v1/notifications' \
+            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
+            --header 'Content-Type: application/json' \
+            --data '{
+              "app_id": "${{ secrets.ONESIGNAL_APP_ID }}",
+              "included_segments": ["Subscribed Users"],
+              "headings": {"en": "Ready for some love?"},
+              "contents": {"en": "Your daily dose of love is waiting. Tap to see what we’ve got!"},
+              "url": "https://bhondu-bdayy.vercel.app/"
+            }'
