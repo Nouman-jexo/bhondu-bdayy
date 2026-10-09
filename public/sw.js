@@ -5,7 +5,7 @@ try {
   console.log('OneSignal offline mode');
 }
 
-const CACHE_NAME = 'aleena-coldstart-v9';
+const CACHE_NAME = 'aleena-ultimate-v10';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -27,7 +27,7 @@ const PRECACHE_ASSETS = [
   '/audio/bgm.mp3'
 ];
 
-// 2. Install Event - Force immediate activation & precache
+// 2. Install Event - Force immediate takeover & precache assets
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -50,7 +50,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Helper: HTTP 206 Partial Content Streamer for Audio Offline
+// Helper: HTTP 206 Range Streamer for Offline Audio
 async function handleAudioRange(request) {
   const cache = await caches.open(CACHE_NAME);
   let response = await cache.match(request, { ignoreSearch: true, ignoreVary: true });
@@ -94,17 +94,16 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Strategy A: Background MP3 Music
+  // Strategy A: Audio Files & Streaming
   if (url.pathname.endsWith('.mp3') || request.headers.has('range')) {
     event.respondWith(handleAudioRange(request));
     return;
   }
 
-  // Strategy B: Navigation Requests (App Launch / Cold Start)
+  // Strategy B: Page Navigations (App Launch / Cold Start)
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       (async () => {
-        // Try network first when online
         try {
           const networkResponse = await fetch(request);
           if (networkResponse && networkResponse.ok) {
@@ -113,19 +112,14 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           }
         } catch (error) {
-          // Network offline - Fallback to cached home page
+          // Network offline
         }
 
-        // Offline cold start: match '/' ignoring query params & Vary headers
         const cachedHome = await caches.match('/', { ignoreSearch: true, ignoreVary: true });
-        if (cachedHome) {
-          return cachedHome;
-        }
+        if (cachedHome) return cachedHome;
 
         const cachedReq = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
-        if (cachedReq) {
-          return cachedReq;
-        }
+        if (cachedReq) return cachedReq;
 
         return new Response('Offline', { status: 503, statusText: 'Offline' });
       })()
@@ -133,28 +127,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy C: Static Assets, Next.js Scripts, CSS, and Images
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      (async () => {
-        const cachedResponse = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+  // Strategy C: Assets (Images, Next.js dynamic chunks, CSS, Textures)
+  event.respondWith(
+    (async () => {
+      const cachedResponse = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
+      if (cachedResponse) {
+        return cachedResponse;
+      }
 
-        try {
-          const networkResponse = await fetch(request);
-          if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, networkResponse.clone());
-          }
-          return networkResponse;
-        } catch (e) {
-          if (request.destination === 'image') {
-            return caches.match('/images/panda.png', { ignoreSearch: true, ignoreVary: true });
-          }
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(request, networkResponse.clone());
         }
-      })()
-    );
-  }
+        return networkResponse;
+      } catch (e) {
+        if (request.destination === 'image' || url.pathname.match(/\.(png|jpg|jpeg|svg|webp|gif)$/i)) {
+          const paper = await caches.match('/images/vintage-paper.png', { ignoreSearch: true, ignoreVary: true });
+          if (paper) return paper;
+          const panda = await caches.match('/images/panda.png', { ignoreSearch: true, ignoreVary: true });
+          if (panda) return panda;
+        }
+      }
+    })()
+  );
 });
