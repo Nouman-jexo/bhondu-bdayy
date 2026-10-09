@@ -2,7 +2,13 @@ name: Send Daily Push Notification
 
 on:
   schedule:
-    - cron: '0 7 * * *' # Runs daily (adjust cron frequency if needed)
+    - cron: '0 2 * * *'   # 7:00 AM PKT window
+    - cron: '0 5 * * *'   # Random slot window 1
+    - cron: '0 8 * * *'   # 1:00 PM PKT window
+    - cron: '0 11 * * *'  # 4:00 PM PKT window
+    - cron: '0 13 * * *'  # 6:00 PM PKT window
+    - cron: '0 17 * * *'  # Random slot window 2
+    - cron: '0 21 * * *'  # 2:00 AM PKT window
   workflow_dispatch:
 
 jobs:
@@ -12,7 +18,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Send Random Push Notification
+      - name: Send Random Push Notification with Jitter
         env:
           ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
         run: |
@@ -20,45 +26,58 @@ jobs:
             const fs = require("fs");
             const https = require("https");
 
-            // Read messages from your repo
-            const messages = JSON.parse(fs.readFileSync("messages.json", "utf8"));
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            // Helper to sleep for a random number of minutes (e.g., 0 to 30 mins)
+            const waitRandomMinutes = (maxMinutes) => {
+              const delayMs = Math.floor(Math.random() * (maxMinutes * 60 * 1000));
+              console.log(`Waiting for ${(delayMs / 1000 / 60).toFixed(1)} minutes for random jitter...`);
+              return new Promise(resolve => setTimeout(resolve, delayMs));
+            };
 
-            const data = JSON.stringify({
-              app_id: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
-              include_subscription_ids: ["137d1d6a-cd25-403b-a109-c80f625b0295"],
-              headings: { en: "Reminder from me ❤️" },
-              contents: { en: randomMessage },
-              url: "https://bhondu-bdayy.vercel.app"
-            });
+            async function run() {
+              // Add up to 30 minutes of random jitter so it is never at the exact same minute
+              await waitRandomMinutes(30);
 
-            const req = https.request({
-              hostname: "api.onesignal.com",
-              path: "/notifications",
-              method: "POST",
-              headers: {
-                "Authorization": "Basic " + process.env.ONESIGNAL_REST_API_KEY,
-                "Content-Type": "application/json",
-                "Content-Length": Buffer.byteLength(data)
-              }
-            }, (res) => {
-              let body = "";
-              res.on("data", (chunk) => body += chunk);
-              res.on("end", () => {
-                console.log(`Response: ${body}`);
-                if (res.statusCode >= 200 && res.statusCode < 300) {
-                  console.log("Notification sent successfully with message:", randomMessage);
-                } else {
-                  process.exit(1);
-                }
+              const messages = JSON.parse(fs.readFileSync("messages.json", "utf8"));
+              const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+              const data = JSON.stringify({
+                app_id: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
+                include_subscription_ids: ["137d1d6a-cd25-403b-a109-c80f625b0295"],
+                headings: { en: "Reminder from me ❤️" },
+                contents: { en: randomMessage },
+                url: "https://bhondu-bdayy.vercel.app"
               });
-            });
 
-            req.on("error", (e) => {
-              console.error(`Error: ${e.message}`);
-              process.exit(1);
-            });
+              const req = https.request({
+                hostname: "api.onesignal.com",
+                path: "/notifications",
+                method: "POST",
+                headers: {
+                  "Authorization": "Basic " + process.env.ONESIGNAL_REST_API_KEY,
+                  "Content-Type": "application/json",
+                  "Content-Length": Buffer.byteLength(data)
+                }
+              }, (res) => {
+                let body = "";
+                res.on("data", (chunk) => body += chunk);
+                res.on("end", () => {
+                  console.log(`Response: ${body}`);
+                  if (res.statusCode >= 200 && res.statusCode < 300) {
+                    console.log("Notification sent successfully with message:", randomMessage);
+                  } else {
+                    process.exit(1);
+                  }
+                });
+              });
 
-            req.write(data);
-            req.end();
+              req.on("error", (e) => {
+                console.error(`Error: ${e.message}`);
+                process.exit(1);
+              });
+
+              req.write(data);
+              req.end();
+            }
+
+            run();
           '
