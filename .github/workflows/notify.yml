@@ -12,7 +12,7 @@ jobs:
       - name: Trigger OneSignal API
         run: |
           curl --request POST \
-            --url 'https://onesignal.com/api/v1/notifications' \
+            --url 'https://api.onesignal.com/notifications' \
             --header 'Authorization: Key ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
             --header 'Content-Type: application/json' \
             --data '{
