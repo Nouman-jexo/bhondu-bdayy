@@ -12,12 +12,11 @@ jobs:
       - name: Trigger OneSignal API
         run: |
           curl --request POST \
-            --url 'https://api.onesignal.com/notifications' \
-            --header 'Authorization: Key ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
+            --url 'https://onesignal.com/api/v1/notifications' \
+            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
             --header 'Content-Type: application/json' \
             --data '{
               "app_id": "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
-              "target_channel": "push",
               "included_segments": ["Subscribed Users"],
               "headings": {"en": "Ready for some love?"},
               "contents": {"en": "Your daily dose of love is waiting. Tap to see what we’ve got!"},
