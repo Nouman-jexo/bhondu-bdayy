@@ -1,12 +1,13 @@
-// 1. MUST keep OneSignal imported for notifications to work!
+// 1. OneSignal SDK Import (Required for Push Notifications)
 try {
   importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 } catch (e) {
-  console.log('OneSignal offline fallback');
+  console.log('OneSignal offline mode');
 }
 
-const CACHE = 'aleena-v2';
-const PRECACHE = [
+const CACHE_NAME = 'bhondu-pwa-v6';
+
+const PRECACHE_ASSETS = [
   '/',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
@@ -23,39 +24,43 @@ const PRECACHE = [
   '/images/user-3.jpeg',
   '/images/user-4.jpeg',
   '/images/user-5.jpeg',
-  '/audio/bgm.mp3',
+  '/audio/bgm.mp3'
 ];
 
-// 2. Install Event - Individual file caching (won't crash if 1 file fails)
+// 2. Install Event - Safe precaching with Promise.allSettled
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => {
+    caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
-        PRECACHE.map((url) => cache.add(url))
+        PRECACHE_ASSETS.map((url) => cache.add(url))
       );
     })
   );
   self.skipWaiting();
 });
 
-// 3. Activate Event
+// 3. Activate Event - Clear old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
+      Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      )
     ).then(() => self.clients.claim())
   );
 });
 
-// Helper for HTTP Range Requests (Fixes MP3 playback offline)
+// Helper: HTTP 206 Partial Content Streamer for Audio Offline
 async function handleAudioRange(request) {
-  const cache = await caches.open(CACHE);
-  const response = await cache.match(request, { ignoreSearch: true });
+  const cache = await caches.open(CACHE_NAME);
+  let response = await cache.match(request, { ignoreSearch: true });
 
   if (!response) {
     try {
       const netResp = await fetch(request);
-      if (netResp.ok) cache.put(request, netResp.clone());
+      if (netResp && (netResp.status === 200 || netResp.type === 'opaque')) {
+        cache.put(request, netResp.clone());
+      }
       return netResp;
     } catch (e) {
       return new Response('', { status: 416 });
@@ -82,14 +87,14 @@ async function handleAudioRange(request) {
   });
 }
 
-// 4. Fetch Event
+// 4. Fetch Event Handler
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
 
-  // Handle MP3 audio streaming offline
+  // Strategy A: MP3 Audio streaming
   if (url.pathname.endsWith('.mp3') || request.headers.has('range')) {
     event.respondWith(handleAudioRange(request));
     return;
@@ -97,13 +102,15 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
 
-  // Navigation requests (Pages)
-  if (request.mode === 'navigate') {
+  // Strategy B: Page Navigation & Next.js App Router (_rsc) requests
+  if (request.mode === 'navigate' || url.searchParams.has('_rsc')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
@@ -111,17 +118,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets
+  // Strategy C: Static Assets (Images, Icons, CSS, JS)
   event.respondWith(
     caches.match(request).then(
       (cached) =>
         cached ||
         fetch(request).then((response) => {
-          if (response.ok) {
+          if (response.ok || response.type === 'opaque') {
             const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return response;
+        }).catch(() => {
+          if (request.destination === 'image') {
+            return caches.match('/images/panda.png');
+          }
         })
     )
   );
