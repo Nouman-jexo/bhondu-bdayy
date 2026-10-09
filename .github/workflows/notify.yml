@@ -2,13 +2,8 @@ name: Send Daily Push Notification
 
 on:
   schedule:
-    # This is set to 07:00 UTC, which equals exactly 12:00 PM PKT (Noon)
-    # Change the "7" to whatever UTC hour you want.
-    - cron: '0 7 * * *'
-  
-  # This line is critical: It adds a "Run workflow" button in GitHub 
-  # so you can manually test this exact script anytime you want!
-  workflow_dispatch: 
+    - cron: '0 7 * * *' # 12:00 PM PKT (07:00 UTC)
+  workflow_dispatch:
 
 jobs:
   send-notification:
@@ -18,10 +13,11 @@ jobs:
         run: |
           curl --request POST \
             --url 'https://onesignal.com/api/v1/notifications' \
-            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
+            --header 'Authorization: Key ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
             --header 'Content-Type: application/json' \
             --data '{
-              "app_id": "${{ secrets.ONESIGNAL_APP_ID }}",
+              "app_id": "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
+              "target_channel": "push",
               "included_segments": ["Subscribed Users"],
               "headings": {"en": "Ready for some love?"},
               "contents": {"en": "Your daily dose of love is waiting. Tap to see what we’ve got!"},
