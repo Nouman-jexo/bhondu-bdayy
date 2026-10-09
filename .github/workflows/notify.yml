@@ -2,7 +2,7 @@ name: Send Daily Push Notification
 
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '0 7 * * *' # 12:00 PM PKT (07:00 UTC)
   workflow_dispatch:
 
 jobs:
@@ -11,13 +11,14 @@ jobs:
     steps:
       - name: Trigger OneSignal API
         run: |
-          curl -X POST "https://onesignal.com/api/v1/notifications" \
-            -H "Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            -d '{
+          curl --request POST \
+            --url 'https://api.onesignal.com/notifications' \
+            --header 'Authorization: Basic ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
+            --header 'Content-Type: application/json' \
+            --data '{
               "app_id": "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
-              "included_segments": ["Subscribed Users"],
+              "include_subscription_ids": ["137d1d6a-cd25-403b-a109-c80f625b0295"],
               "headings": {"en": "Ready for some love?"},
               "contents": {"en": "Your daily dose of love is waiting. Tap to see what we’ve got!"},
-              "url": "https://bhondu-bdayy.vercel.app/"
+              "url": "https://bhondu-bdayy.vercel.app"
             }'
