@@ -82,7 +82,7 @@ export default function RootLayout({
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           strategy="afterInteractive"
         />
-        <Script id="onesignal-init" strategy="afterInteractive">
+       <Script id="onesignal-init" strategy="afterInteractive">
           {`
             window.OneSignalDeferred = window.OneSignalDeferred || [];
             OneSignalDeferred.push(async function(OneSignal) {
@@ -92,6 +92,9 @@ export default function RootLayout({
                 notifyButton: {
                   enable: false,
                 },
+                // Tell OneSignal to use our custom Service Worker
+                serviceWorkerParam: { scope: "/" },
+                serviceWorkerPath: "sw.js"
               });
             });
           `}
