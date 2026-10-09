@@ -5,7 +5,7 @@ try {
   console.log('OneSignal offline mode');
 }
 
-const CACHE_NAME = 'bhondu-pwa-v6';
+const CACHE_NAME = 'aleena-offline-v7';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -27,7 +27,7 @@ const PRECACHE_ASSETS = [
   '/audio/bgm.mp3'
 ];
 
-// 2. Install Event - Safe precaching with Promise.allSettled
+// 2. Install Event - Pre-cache all core app assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -39,7 +39,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// 3. Activate Event - Clear old caches immediately
+// 3. Activate Event - Clear old caches and take control immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -50,7 +50,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Helper: HTTP 206 Partial Content Streamer for Audio Offline
+// Helper: HTTP 206 Range Streamer for Offline MP3 Audio
 async function handleAudioRange(request) {
   const cache = await caches.open(CACHE_NAME);
   let response = await cache.match(request, { ignoreSearch: true });
@@ -58,12 +58,12 @@ async function handleAudioRange(request) {
   if (!response) {
     try {
       const netResp = await fetch(request);
-      if (netResp && (netResp.status === 200 || netResp.type === 'opaque')) {
+      if (netResp && (netResp.ok || netResp.type === 'opaque')) {
         cache.put(request, netResp.clone());
       }
       return netResp;
     } catch (e) {
-      return new Response('', { status: 416 });
+      return new Response('', { status: 416, statusText: 'Range Not Satisfiable' });
     }
   }
 
@@ -94,15 +94,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Strategy A: MP3 Audio streaming
+  // Strategy A: Audio Streaming / Range Requests
   if (url.pathname.endsWith('.mp3') || request.headers.has('range')) {
     event.respondWith(handleAudioRange(request));
     return;
   }
 
-  if (url.origin !== self.location.origin) return;
-
-  // Strategy B: Page Navigation & Next.js App Router (_rsc) requests
+  // Strategy B: Page Navigations & Next.js App Router (_rsc) Data Requests
   if (request.mode === 'navigate' || url.searchParams.has('_rsc')) {
     event.respondWith(
       fetch(request)
@@ -113,27 +111,36 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          const home = await caches.match('/');
+          if (home) return home;
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
+        })
     );
     return;
   }
 
-  // Strategy C: Static Assets (Images, Icons, CSS, JS)
+  // Strategy C: Static Assets (Cache-First with Network Fallback)
   event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((response) => {
-          if (response.ok || response.type === 'opaque') {
-            const copy = response.clone();
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
+            const copy = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-          return response;
-        }).catch(() => {
+          return networkResponse;
+        })
+        .catch(() => {
           if (request.destination === 'image') {
             return caches.match('/images/panda.png');
           }
-        })
-    )
+        });
+    })
   );
 });
