@@ -43,8 +43,8 @@ jobs:
               const data = JSON.stringify({
                 app_id: "705d6671-3343-4e8f-a4f5-b1a7214de2f0",
                 include_subscription_ids: [
-                "c6981a44-635f-49e0-b05c-d6050b83213c",
-                "9accf99b-aea8-4662-b36b-acbca947b7ac"
+                "137d1d6a-cd25-403b-a109-c80f625b0295",
+                "ece07d9c-87f8-4a9e-b87e-906830277fc4"
                 ],
                 headings: { en: "Reminder from me ❤️" },
                 contents: { en: randomMessage },
